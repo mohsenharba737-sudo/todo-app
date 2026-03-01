@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>تطبيق المهام</title>
+
+<style>
+body {
+    font-family: Arial;
+    text-align: center;
+    background: #f0f0f0;
+    transition: 0.3s;
+}
+
+.dark {
+    background: #222;
+    color: white;
+}
+
+.container {
+    background: white;
+    padding: 20px;
+    width: 330px;
+    margin: 50px auto;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+.dark .container {
+    background: #333;
+}
+
+input {
+    padding: 10px;
+    width: 70%;
+}
+
+button {
+    padding: 8px 12px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+li {
+    background: #eee;
+    margin: 10px 0;
+    padding: 10px;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.dark li {
+    background: #444;
+}
+
+.edit-input {
+    width: 60%;
+    padding: 5px;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(5px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>قائمة مهامي</h2>
+
+    <button onclick="toggleDarkMode()">الوضع الليلي 🌙</button>
+
+    <p id="counter">عدد المهام: 0</p>
+    <button onclick="clearAll()">حذف كل المهام</button>
+
+    <br><br>
+
+    <input type="text" id="taskInput" placeholder="اكتب مهمة...">
+    <button onclick="addTask()">إضافة</button>
+
+    <ul id="taskList"></ul>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let darkMode = localStorage.getItem("darkMode") === "true";
+
+if (darkMode) {
+    document.body.classList.add("dark");
+}
+
+function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+}
+
+function renderTasks() {
+    let taskList = document.getElementById("taskList");
+    let counter = document.getElementById("counter");
+
+    taskList.innerHTML = "";
+    counter.textContent = "عدد المهام: " + tasks.length;
+
+    if (tasks.length === 0) {
+        taskList.innerHTML = "<p>لا توجد مهام حالياً</p>";
+        return;
+    }
+
+    tasks.forEach((task, index) => {
+        let li = document.createElement("li");
+
+        let span = document.createElement("span");
+        span.textContent = task.text;
+
+        if (task.completed) {
+            span.style.textDecoration = "line-through";
+            span.style.color = "gray";
+        }
+
+        span.onclick = function() {
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+            renderTasks();
+        };
+
+        let editBtn = document.createElement("button");
+        editBtn.textContent = "تعديل";
+        editBtn.onclick = function() {
+            let input = document.createElement("input");
+            input.type = "text";
+            input.value = task.text;
+            input.className = "edit-input";
+
+            let saveBtn = document.createElement("button");
+            saveBtn.textContent = "حفظ";
+
+            li.innerHTML = "";
+            li.appendChild(input);
+            li.appendChild(saveBtn);
+
+            saveBtn.onclick = function() {
+                let newText = input.value.trim();
+                if (newText === "") return alert("النص فارغ!");
+
+                tasks[index].text = newText;
+                saveTasks();
+                renderTasks();
+            };
+        };
+
+        let deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "حذف";
+        deleteBtn.onclick = function() {
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        };
+
+        li.appendChild(span);
+        li.appendChild(editBtn);
+        li.appendChild(deleteBtn);
+        taskList.appendChild(li);
+    });
+}
+
+function addTask() {
+    let input = document.getElementById("taskInput");
+    let taskText = input.value.trim();
+
+    if (taskText === "") {
+        alert("اكتب مهمة أولاً");
+        return;
+    }
+
+    if (tasks.some(task => task.text === taskText)) {
+        alert("هذه المهمة موجودة بالفعل");
+        return;
+    }
+
+    tasks.push({
+        text: taskText,
+        completed: false
+    });
+
+    saveTasks();
+    input.value = "";
+    renderTasks();
+}
+
+function clearAll() {
+    tasks = [];
+    saveTasks();
+    renderTasks();
+}
+
+document.getElementById("taskInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        addTask();
+    }
+});
+
+renderTasks();
+</script>
+
+</body>
+</html>
